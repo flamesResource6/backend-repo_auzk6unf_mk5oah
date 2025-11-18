@@ -1,8 +1,12 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import List
+from database import create_document
+from schemas import ContactInquiry
 
-app = FastAPI()
+app = FastAPI(title="Malerbetrieb API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -14,11 +18,11 @@ app.add_middleware(
 
 @app.get("/")
 def read_root():
-    return {"message": "Hello from FastAPI Backend!"}
+    return {"message": "Backend läuft", "version": "1.0.0"}
 
 @app.get("/api/hello")
 def hello():
-    return {"message": "Hello from the backend API!"}
+    return {"message": "Willkommen beim Malerbetrieb!"}
 
 @app.get("/test")
 def test_database():
@@ -64,6 +68,17 @@ def test_database():
     
     return response
 
+class ContactRequest(ContactInquiry):
+    pass
+
+@app.post("/api/contact")
+def create_contact(data: ContactRequest):
+    """Store a contact inquiry from the website"""
+    try:
+        inserted_id = create_document("contactinquiry", data)
+        return {"status": "ok", "id": inserted_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn
